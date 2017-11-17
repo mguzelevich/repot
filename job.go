@@ -19,7 +19,7 @@ type job struct {
 	executed bool
 
 	status  jobStatus
-	results interface{}
+	results string
 }
 
 func (j *job) start() {
@@ -34,8 +34,10 @@ func (j *job) start() {
 
 func (j *job) done(out string, err error) {
 	j.status = finished
+	j.results = out
 }
 
 func (j *job) fail(out string, err error) {
 	j.status = failed
+	j.results = out
 }

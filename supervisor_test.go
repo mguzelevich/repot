@@ -55,7 +55,6 @@ func TestSupervisor_execJobs(t *testing.T) {
 		sv.AddJob(fmt.Sprintf("uid %v", i*2+1), testJobFailed)
 	}
 	sv.ExecJobs()
-	sv.ExecJobs()
 
 	// stats := sv.status()
 	// if stats[finished] != 1 {

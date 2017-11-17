@@ -41,6 +41,11 @@ type superVisor struct {
 	allDoneChan    chan bool
 }
 
+func (s *superVisor) JobResults(uid string) (jobStatus, string) {
+	j := s.queue[uid]
+	return j.status, j.results
+}
+
 func (s *superVisor) status() string {
 	status := ""
 	for _, j := range s.jobs {

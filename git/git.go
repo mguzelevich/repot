@@ -13,6 +13,28 @@ type GitRepo struct {
 	url  string
 }
 
+func customCmdBuilder(args []string) []string {
+	result := []string{"git"}
+	switch args[0] {
+	case "status":
+		result = []string{"git", "status", "--short", "--branch"}
+	default:
+		result = append(result, args...)
+	}
+	return result
+}
+
+func customOutParser(cmd string, out []byte) string {
+	result := string(out)
+	switch cmd {
+	case "status":
+		//result = out
+	default:
+		//result = out
+	}
+	return result
+}
+
 // https://nathanleclaire.com/blog/2014/12/29/shelled-out-commands-in-golang/
 func ExecGitCmd(dir string, args []string) ([]byte, error) {
 	cmdPath, err := exec.LookPath(args[0])
@@ -33,6 +55,19 @@ func ExecGitCmd(dir string, args []string) ([]byte, error) {
 	}
 	log.WithFields(log.Fields{"cmd": cmd, "out": string(out)}).Info("cmd executed")
 	return out, nil
+}
+
+func Exec(directory string, cmd []string) (string, error) {
+	// args := []string{"journalctl", "-b", "-f"}
+	args := customCmdBuilder(cmd)
+
+	log.WithFields(log.Fields{"directory": directory, "cmd": args}).Debug("git")
+
+	rawOut, err := ExecGitCmd(directory, args)
+
+	out := customOutParser(args[1], rawOut)
+
+	return out, err
 }
 
 func Clone(repository string, directory string) (string, error) {

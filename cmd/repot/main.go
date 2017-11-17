@@ -4,12 +4,9 @@ import (
 	"fmt"
 	"os"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	// "github.com/mguzelevich/repot"
-	// "github.com/mguzelevich/repot/git"
-	// "github.com/mguzelevich/repot/repos"
-	log "github.com/sirupsen/logrus"
 )
 
 var cfgFile string
@@ -91,7 +88,7 @@ func init() {
 	RootCmd.PersistentFlags().BoolVar(&cmdArgs.Debug, "debug", false, "Enable debug mode")
 	RootCmd.PersistentFlags().BoolVar(&cmdArgs.Progress, "progress", false, "Show progress")
 	RootCmd.PersistentFlags().BoolVar(&cmdArgs.DryRun, "dry-run", false, "Enable dry-run mode")
-	RootCmd.PersistentFlags().IntVar(&cmdArgs.Jobs, "jobs", 5, "Jobs")
+	RootCmd.PersistentFlags().IntVar(&cmdArgs.Jobs, "jobs", 1, "Jobs")
 	RootCmd.PersistentFlags().StringVarP(&cmdArgs.Root, "root", "r", "", "root/target directory")
 
 	// Cobra also supports local flags, which will only run
