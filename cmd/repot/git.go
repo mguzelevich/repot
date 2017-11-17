@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/mguzelevich/repot"
+	"github.com/mguzelevich/repot/fs"
 	"github.com/mguzelevich/repot/git"
 )
 
@@ -25,9 +26,9 @@ var gitCmd = &cobra.Command{
 			rootPath = "."
 		}
 
-		var fsRepos = []*repot.Repository{}
+		var fsRepos = []*git.Repository{}
 
-		if repositories, err := repot.Walk(rootPath); err != nil {
+		if repositories, err := fs.Walk(rootPath); err != nil {
 			log.WithFields(log.Fields{"err": err}).Error("Walk")
 		} else {
 			fsRepos = repositories

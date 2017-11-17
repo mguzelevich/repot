@@ -5,15 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
-
-	log "github.com/sirupsen/logrus"
-
-	"github.com/mguzelevich/repot/git"
 )
 
 // newUUID generates a random UUID according to RFC 4122
@@ -40,44 +34,6 @@ func keys(m map[int]bool) []int {
 	}
 	sort.Ints(keys)
 	return keys
-}
-
-func Walk(rootPath string) ([]*Repository, error) {
-	targets := []*Repository{}
-	walker := func(walkerPath string, f os.FileInfo, err error) error {
-		if f.IsDir() && filepath.Base(walkerPath) == ".git" {
-			var r *Repository
-			if walkerPath == ".git" {
-				r = &Repository{Path: "."}
-			} else {
-				idx := strings.LastIndex(walkerPath, "/")
-				r = &Repository{Path: walkerPath[:idx]}
-			}
-
-			// directory := filepath.Join(path, r.Path, r.Name)
-			if config, err := git.GetGitConfig(r.Path); err != nil {
-				log.WithFields(log.Fields{"repository": r}).Error("walk: get git config")
-			} else {
-				r.Repository = config["remote.origin.url"]
-				p := r.Path
-				if strings.HasPrefix(p, rootPath) {
-					idx := strings.LastIndex(p, "/")
-					r.Path = p[len(rootPath):idx]
-					r.Name = p[idx+1:]
-				}
-
-			}
-			targets = append(targets, r)
-			return filepath.SkipDir
-		}
-		return nil
-	}
-
-	if err := filepath.Walk(rootPath, walker); err != nil {
-		return nil, err
-	}
-
-	return targets, nil
 }
 
 func ParseRangesString(ranges string) ([]int, error) {

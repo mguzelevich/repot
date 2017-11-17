@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/mguzelevich/repot"
+	"github.com/mguzelevich/repot/fs"
 	"github.com/mguzelevich/repot/git"
 )
 
@@ -38,7 +39,7 @@ var cloneCmd = &cobra.Command{
 			rootPath = filepath.Join("/tmp/repot/clone", time.Now().Format("20060102_150405"))
 		}
 
-		var manifestRepos = []*repot.Repository{}
+		var manifestRepos = []*git.Repository{}
 		if manifest, err := repot.GetManifest(cmdArgs.Repos.ManifestFile); err != nil {
 			log.WithFields(log.Fields{"err": err}).Error("getManifest")
 		} else {
@@ -78,8 +79,8 @@ var diffCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.WithFields(log.Fields{"use": cmd.Use, "args": args}).Debug("comand called")
 
-		var manifestRepos = []*repot.Repository{}
-		var fsRepos = []*repot.Repository{}
+		var manifestRepos = []*git.Repository{}
+		var fsRepos = []*git.Repository{}
 
 		if manifest, err := repot.GetManifest(cmdArgs.Repos.ManifestFile); err != nil {
 			log.WithFields(log.Fields{"err": err}).Error("getManifest")
@@ -87,13 +88,13 @@ var diffCmd = &cobra.Command{
 			manifestRepos = manifest.Repositories
 		}
 
-		if repositories, err := repot.Walk(cmdArgs.Root); err != nil {
+		if repositories, err := fs.Walk(cmdArgs.Root); err != nil {
 			log.WithFields(log.Fields{"err": err}).Error("Walk")
 		} else {
 			fsRepos = repositories
 		}
 
-		fsMap := map[string]*repot.Repository{}
+		fsMap := map[string]*git.Repository{}
 		for _, r := range fsRepos {
 			fsMap[r.HashID()] = r
 		}

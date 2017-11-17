@@ -25,7 +25,7 @@ func customCmdBuilder(args []string) []string {
 }
 
 func customOutParser(cmd string, out []byte) string {
-	result := string(out)
+	result := strings.TrimSpace(string(out))
 	switch cmd {
 	case "status":
 		//result = out

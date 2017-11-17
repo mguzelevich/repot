@@ -36,4 +36,5 @@ rm ./repot; GOPATH=`pwd` go build github.com/mguzelevich/repot/cmd/... && cat ma
 
 % dep status
 % dep ensure
+% dep ensure --update
 ```

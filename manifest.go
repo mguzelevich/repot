@@ -11,10 +11,12 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+
+	"github.com/mguzelevich/repot/git"
 )
 
 type Manifest struct {
-	Repositories []*Repository
+	Repositories []*git.Repository
 }
 
 func processManifestLine(line string) error {
@@ -36,7 +38,7 @@ func (m *Manifest) ReadManifestFromFile(filename string) error {
 
 func (m *Manifest) Add(repository string, path string, name string) error {
 	log.WithFields(log.Fields{"repository": repository, "path": path, "name": name}).Debug("add to manifest")
-	r := Repository{
+	r := git.Repository{
 		Repository: repository, Path: path, Name: name,
 	}
 	m.Repositories = append(m.Repositories, &r)
