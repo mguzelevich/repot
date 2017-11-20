@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -34,28 +35,30 @@ var gitCmd = &cobra.Command{
 			fsRepos = repositories
 		}
 
+		results := make(map[string][]string)
+
 		supervisor := repot.NewSuperVisor(cmdArgs.Jobs)
 		supervisor.ShowProgress = cmdArgs.Progress
 		for _, r := range fsRepos {
 			directory := filepath.Join(rootPath, r.Path, r.Name)
 			repository := r.Repository
 
-			gitFunc := func(uid string) (string, error) {
+			gitFunc := func(uid string) error {
 				log.WithFields(log.Fields{"uid": uid, "repository": repository, "directory": directory}).Debug("clone func")
 				out, err := git.Exec(directory, args)
-				return out, err
+				results[uid] = out
+				return err
 			}
-			// uid := fmt.Sprintf("%v %s", idx, r.Repository)
-			// uid, _ = repot.UUID()
 			uid := r.HashID()
 			supervisor.AddJob(uid, gitFunc)
 		}
 		supervisor.ExecJobs()
 
 		for idx, r := range fsRepos {
-			status, out := supervisor.JobResults(r.HashID())
+			status := supervisor.JobState(r.HashID())
+			out := results[r.HashID()]
 			fmt.Fprintf(os.Stderr, "=== %03d === [%s] %s\n", idx+1, r.Repository, status)
-			fmt.Fprintf(os.Stderr, "%s\n", out)
+			fmt.Fprintf(os.Stderr, "%s\n", strings.Join(out, "\n"))
 		}
 	},
 }

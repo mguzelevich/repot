@@ -41,23 +41,22 @@ type superVisor struct {
 	allDoneChan    chan bool
 }
 
-func (s *superVisor) JobResults(uid string) (jobStatus, string) {
-	j := s.queue[uid]
-	return j.status, j.results
+func (s *superVisor) JobState(uid string) jobState {
+	return s.queue[uid].state
 }
 
 func (s *superVisor) status() string {
 	status := ""
 	for _, j := range s.jobs {
 		jobStatus := "."
-		switch job := s.queue[j]; job.status {
-		case pending:
+		switch job := s.queue[j]; job.state {
+		case jobStatePending:
 			jobStatus = "."
-		case executing:
+		case jobStateExecuting:
 			jobStatus = "*"
-		case failed:
+		case jobStateFailed:
 			jobStatus = "E"
-		case finished:
+		case jobStateFinished:
 			jobStatus = "+"
 		default:
 			jobStatus = "!"
@@ -108,11 +107,11 @@ func (s *superVisor) statusLoop() {
 	}
 }
 
-func (s *superVisor) AddJob(uid string, handler func(uid string) (string, error)) error {
+func (s *superVisor) AddJob(uid string, handler JobHandler) error {
 	j := &job{
 		uid:     uid,
+		state:   jobStatePending,
 		handler: handler,
-		status:  pending,
 	}
 	s.addJobChan <- j
 	return nil
@@ -125,7 +124,7 @@ func (s *superVisor) checkDone() error {
 			log.WithFields(log.Fields{"worker": uid}).Debug("worker loop finished")
 			allDone := true
 			for _, j := range s.queue {
-				allDone = allDone && j.executed
+				allDone = allDone && j.executed()
 			}
 			if allDone {
 				s.allDoneChan <- true

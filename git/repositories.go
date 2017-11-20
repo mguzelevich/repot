@@ -16,6 +16,8 @@ type Repository struct {
 }
 
 func (r *Repository) HashID() string {
+	// uid := fmt.Sprintf("%v %s", idx, r.Repository)
+	// uid, _ = repot.UUID()
 	hasher := md5.New()
 	hasher.Write([]byte(fmt.Sprintf("%s|%s|%s", r.Repository, r.Path, r.Name)))
 	return hex.EncodeToString(hasher.Sum(nil))

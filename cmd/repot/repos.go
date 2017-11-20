@@ -46,6 +46,8 @@ var cloneCmd = &cobra.Command{
 			manifestRepos = manifest.Repositories
 		}
 
+		results := make(map[string][]string)
+
 		supervisor := repot.NewSuperVisor(cmdArgs.Jobs)
 		supervisor.ShowProgress = cmdArgs.Progress
 		for idx, r := range manifestRepos {
@@ -54,10 +56,11 @@ var cloneCmd = &cobra.Command{
 			directory := filepath.Join(rootPath, r.Path, r.Name)
 			repository := r.Repository
 
-			cloneFunc := func(uid string) (string, error) {
+			cloneFunc := func(uid string) error {
 				log.WithFields(log.Fields{"uid": uid, "repository": repository, "directory": directory}).Debug("clone func")
 				out, err := git.Clone(repository, directory)
-				return out, err
+				results[uid] = out
+				return err
 			}
 			uid := r.HashID()
 			supervisor.AddJob(uid, cloneFunc)
@@ -65,8 +68,8 @@ var cloneCmd = &cobra.Command{
 		supervisor.ExecJobs()
 
 		for idx, r := range manifestRepos {
-			status, _ := supervisor.JobResults(r.HashID())
-			fmt.Fprintf(os.Stderr, "=== %03d === [%s] %s\n", idx+1, r.Repository, status)
+			state := supervisor.JobState(r.HashID())
+			fmt.Fprintf(os.Stderr, "=== %03d === [%s] %s\n", idx+1, r.Repository, state)
 		}
 	},
 }

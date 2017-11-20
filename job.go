@@ -4,40 +4,40 @@ import (
 //	log "github.com/sirupsen/logrus"
 )
 
-type jobStatus string
+type jobState string
 
 const (
-	pending   jobStatus = "pending"
-	executing jobStatus = "executing"
-	failed    jobStatus = "failed"
-	finished  jobStatus = "finished"
+	jobStatePending   jobState = "pending"
+	jobStateExecuting jobState = "executing"
+	jobStateFailed    jobState = "failed"
+	jobStateFinished  jobState = "finished"
 )
 
-type job struct {
-	uid      string
-	handler  func(uid string) (string, error)
-	executed bool
+type JobHandler func(uid string) error
 
-	status  jobStatus
-	results string
+type job struct {
+	uid     string
+	state   jobState
+	handler JobHandler
 }
 
 func (j *job) start() {
-	j.status = executing
-	if out, err := j.handler(j.uid); err != nil {
-		j.fail(out, err)
+	j.state = jobStateExecuting
+	if err := j.handler(j.uid); err != nil {
+		j.fail(err)
 	} else {
-		j.done(out, err)
+		j.done(err)
 	}
-	j.executed = true
 }
 
-func (j *job) done(out string, err error) {
-	j.status = finished
-	j.results = out
+func (j *job) executed() bool {
+	return j.state == jobStateFinished || j.state == jobStateFailed
 }
 
-func (j *job) fail(out string, err error) {
-	j.status = failed
-	j.results = out
+func (j *job) done(err error) {
+	j.state = jobStateFinished
+}
+
+func (j *job) fail(err error) {
+	j.state = jobStateFailed
 }

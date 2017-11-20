@@ -24,19 +24,19 @@ func customCmdBuilder(args []string) []string {
 	return result
 }
 
-func customOutParser(cmd string, out []byte) string {
-	result := strings.TrimSpace(string(out))
+func customOutParser(cmd string, out []string) []string {
+	result := []string{}
 	switch cmd {
 	case "status":
-		//result = out
+		result = out
 	default:
-		//result = out
+		result = out
 	}
 	return result
 }
 
 // https://nathanleclaire.com/blog/2014/12/29/shelled-out-commands-in-golang/
-func ExecGitCmd(dir string, args []string) ([]byte, error) {
+func ExecGitCmd(dir string, args []string) ([]string, error) {
 	cmdPath, err := exec.LookPath(args[0])
 	if err != nil {
 		log.WithFields(log.Fields{"err": err, "arg": args[0]}).Error("LookPath")
@@ -49,15 +49,23 @@ func ExecGitCmd(dir string, args []string) ([]byte, error) {
 	}
 
 	out, err := cmd.CombinedOutput()
-	if err != nil {
-		log.WithFields(log.Fields{"err": err, "out": string(out)}).Error("Error starting Cmd")
-		return out, fmt.Errorf("error starting cmd")
+
+	output := []string{}
+	for _, line := range strings.Split(string(out), "\n") {
+		output = append(output, line)
 	}
-	log.WithFields(log.Fields{"cmd": cmd, "out": string(out)}).Info("cmd executed")
-	return out, nil
+
+	l := log.WithFields(log.Fields{"err": err, "out": string(out)})
+	if err != nil {
+		l.Error("ExecGitCmd")
+		return output, fmt.Errorf("ExecGitCmd error")
+	}
+	l.Info("ExecGitCmd")
+
+	return output, nil
 }
 
-func Exec(directory string, cmd []string) (string, error) {
+func Exec(directory string, cmd []string) ([]string, error) {
 	// args := []string{"journalctl", "-b", "-f"}
 	args := customCmdBuilder(cmd)
 
@@ -70,7 +78,7 @@ func Exec(directory string, cmd []string) (string, error) {
 	return out, err
 }
 
-func Clone(repository string, directory string) (string, error) {
+func Clone(repository string, directory string) ([]string, error) {
 	log.WithFields(log.Fields{"repository": repository, "directory": directory}).Debug("git.clone")
 
 	// args := []string{"journalctl", "-b", "-f"}
@@ -78,7 +86,7 @@ func Clone(repository string, directory string) (string, error) {
 	//args = append(args, ".")
 
 	out, err := ExecGitCmd(".", args)
-	return string(out), err
+	return out, err
 }
 
 func GetGitConfig(directory string) (map[string]string, error) {
@@ -93,7 +101,7 @@ func GetGitConfig(directory string) (map[string]string, error) {
 		return nil, err
 	}
 	config := map[string]string{}
-	for _, s := range strings.Split(string(out), "\n") {
+	for _, s := range out {
 		d := strings.Split(s, `=`)
 		if len(d) != 2 {
 			continue

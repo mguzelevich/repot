@@ -8,14 +8,14 @@ import (
 	"time"
 )
 
-var testJobOk = func(uid string) (string, error) {
+var testJobOk = func(uid string) error {
 	time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
-	return fmt.Sprintf("%v", uid), nil
+	return nil
 }
 
-var testJobFailed = func(uid string) (string, error) {
+var testJobFailed = func(uid string) error {
 	time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
-	return fmt.Sprintf("%v", uid), errors.New("failed")
+	return errors.New("failed")
 }
 
 func TestSupervisor_addJobs(t *testing.T) {
