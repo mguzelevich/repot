@@ -37,9 +37,11 @@ func customOutParser(cmd string, out []string) []string {
 
 // https://nathanleclaire.com/blog/2014/12/29/shelled-out-commands-in-golang/
 func ExecGitCmd(dir string, args []string) ([]string, error) {
+	gitLogger := log.WithFields(log.Fields{"cmd": args})
 	cmdPath, err := exec.LookPath(args[0])
 	if err != nil {
-		log.WithFields(log.Fields{"err": err, "arg": args[0]}).Error("LookPath")
+		gitLogger.WithFields(log.Fields{"err": err}).Error("LookPath")
+		return nil, fmt.Errorf("ExecGitCmd lookup error")
 	}
 
 	cmd := exec.Cmd{
@@ -55,7 +57,7 @@ func ExecGitCmd(dir string, args []string) ([]string, error) {
 		output = append(output, line)
 	}
 
-	l := log.WithFields(log.Fields{"err": err, "out": string(out)})
+	l := gitLogger.WithFields(log.Fields{"err": err, "out": string(out)})
 	if err != nil {
 		l.Error("ExecGitCmd")
 		return output, fmt.Errorf("ExecGitCmd error")
