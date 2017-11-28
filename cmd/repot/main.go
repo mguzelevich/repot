@@ -84,7 +84,7 @@ func init() {
 	// Cobra supports Persistent Flags, which, if defined here,
 	// will be global for your application.
 
-	//RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.repot.yaml)")
+	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.repot.yaml)")
 	RootCmd.PersistentFlags().BoolVar(&cmdArgs.Debug, "debug", false, "Enable debug mode")
 	RootCmd.PersistentFlags().BoolVar(&cmdArgs.Progress, "progress", false, "Show progress")
 	RootCmd.PersistentFlags().BoolVar(&cmdArgs.DryRun, "dry-run", false, "Enable dry-run mode")
