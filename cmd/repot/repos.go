@@ -46,7 +46,7 @@ var cloneCmd = &cobra.Command{
 			manifestRepos = manifest.Repositories
 		}
 
-		results := make(map[string][]string)
+		results := newOutputs()
 
 		supervisor := repot.NewSuperVisor(cmdArgs.Jobs)
 		supervisor.ShowProgress = cmdArgs.Progress
@@ -59,7 +59,7 @@ var cloneCmd = &cobra.Command{
 			cloneFunc := func(uid string) error {
 				log.WithFields(log.Fields{"uid": uid, "repository": repository, "directory": directory}).Debug("clone func")
 				out, err := git.Clone(repository, directory)
-				results[uid] = out
+				results.Add(uid, out)
 				return err
 			}
 			uid := r.HashID()

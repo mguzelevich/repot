@@ -35,7 +35,7 @@ var gitCmd = &cobra.Command{
 			fsRepos = repositories
 		}
 
-		results := make(map[string][]string)
+		results := newOutputs()
 
 		supervisor := repot.NewSuperVisor(cmdArgs.Jobs)
 		supervisor.ShowProgress = cmdArgs.Progress
@@ -46,7 +46,7 @@ var gitCmd = &cobra.Command{
 			gitFunc := func(uid string) error {
 				log.WithFields(log.Fields{"uid": uid, "repository": repository, "directory": directory}).Debug("clone func")
 				out, err := git.Exec(directory, args)
-				results[uid] = out
+				results.Add(uid, out)
 				return err
 			}
 			uid := r.HashID()
@@ -56,7 +56,7 @@ var gitCmd = &cobra.Command{
 
 		for idx, r := range fsRepos {
 			status := supervisor.JobState(r.HashID())
-			out := results[r.HashID()]
+			out := results.Get(r.HashID())
 			fmt.Fprintf(os.Stderr, "=== %03d === [%s] %s\n", idx+1, r.Repository, status)
 			fmt.Fprintf(os.Stderr, "%s\n", strings.Join(out, "\n"))
 		}
