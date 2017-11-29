@@ -3,10 +3,13 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/mguzelevich/repot/workerpool"
 )
 
 var cfgFile string
@@ -52,7 +55,7 @@ RepoT is a CLI tools suite for automation of development activity.`,
 			"repos.ManifestFile":        cmdArgs.Repos.ManifestFile,
 			"repos.RepositoriesIndexes": cmdArgs.Repos.RepositoriesIndexes,
 		}).Debug("root: PersistentPreRun")
-		init_logger()
+		initLogger()
 	},
 	// PreRun: func(cmd *cobra.Command, args []string) {
 	// 	fmt.Printf("Inside rootCmd PreRun with args: %v\n", args)
@@ -106,9 +109,18 @@ func init() {
 	reposCmd.AddCommand(diffCmd)
 }
 
-func init_logger() {
+func initLogger() {
+	timestamp := time.Now().UTC().Format("20060102")
+
+	// You could set this to any `io.Writer` such as a file
+	file, err := os.OpenFile(fmt.Sprintf("/tmp/repot.%s.log", timestamp), os.O_CREATE|os.O_WRONLY, 0666)
+	if err == nil {
+		log.SetOutput(file)
+	} else {
+		log.Info("Failed to log to file, using default stderr")
+	}
+
 	// log.SetFormatter(&log.JSONFormatter{})
-	// log.SetOutput(os.Stdout)
 	log.SetLevel(log.ErrorLevel)
 	if cmdArgs.Debug {
 		log.SetLevel(log.DebugLevel)
@@ -128,6 +140,18 @@ func initConfig() {
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	}
+}
+
+func progressLoop(wp *workerpool.WorkerPool) {
+	log.Debug("status loop started")
+	heartbeat := time.Tick(2 * time.Second)
+	for {
+		select {
+		case <-heartbeat:
+			fmt.Fprintf(os.Stderr, "jobs: [%s]\n", wp.JobsStatusString())
+			// log.WithFields(log.Fields{"status": status}).Info("JQ")
+		}
 	}
 }
 

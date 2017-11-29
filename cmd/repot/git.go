@@ -11,7 +11,7 @@ import (
 
 	"github.com/mguzelevich/repot/fs"
 	"github.com/mguzelevich/repot/git"
-	"github.com/mguzelevich/repot/supervisor"
+	"github.com/mguzelevich/repot/workerpool"
 )
 
 // gitCmd represents the git command
@@ -35,10 +35,13 @@ var gitCmd = &cobra.Command{
 			fsRepos = repositories
 		}
 
-		results := supervisor.NewSimpleJobsOutputs()
+		results := workerpool.NewSimpleJobsOutputs()
 
-		supervisor := supervisor.NewSuperVisor(cmdArgs.Jobs)
-		supervisor.ShowProgress = cmdArgs.Progress
+		wp := workerpool.NewWP(cmdArgs.Jobs)
+		if cmdArgs.Progress {
+			go progressLoop(wp)
+		}
+
 		for _, r := range fsRepos {
 			directory := filepath.Join(rootPath, r.Path, r.Name)
 			repository := r.Repository
@@ -50,12 +53,12 @@ var gitCmd = &cobra.Command{
 				return err
 			}
 			uid := r.HashID()
-			supervisor.AddJob(uid, gitFunc)
+			wp.AddJob(uid, gitFunc)
 		}
-		supervisor.ExecJobs()
+		wp.ExecJobs()
 
 		for idx, r := range fsRepos {
-			status := supervisor.JobState(r.HashID())
+			status := wp.JobState(r.HashID())
 			out := results.Get(r.HashID())
 			fmt.Fprintf(os.Stderr, "=== %03d === [%s] %s\n", idx+1, r.Repository, status)
 			fmt.Fprintf(os.Stderr, "%s\n", strings.Join(out, "\n"))

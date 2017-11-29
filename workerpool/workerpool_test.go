@@ -1,4 +1,4 @@
-package supervisor
+package workerpool
 
 import (
 	"errors"
@@ -18,8 +18,8 @@ var testJobFailed = func(uid string) error {
 	return errors.New("failed")
 }
 
-func TestSupervisor_addJobs(t *testing.T) {
-	sv := NewSuperVisor(3)
+func TestWorkerPool_addJobs(t *testing.T) {
+	sv := NewWP(3)
 
 	sv.AddJob(fmt.Sprintf("uid %v", 1), testJobOk)
 	sv.AddJob(fmt.Sprintf("uid %v", 2), testJobOk)
@@ -39,8 +39,8 @@ func TestSupervisor_addJobs(t *testing.T) {
 	// }
 }
 
-func TestSupervisor_addExecJobs(t *testing.T) {
-	sv := NewSuperVisor(3)
+func TestWorkerPool_addExecJobs(t *testing.T) {
+	sv := NewWP(3)
 	sv.AddJob(fmt.Sprintf("uid %v", 1), testJobOk)
 	sv.ExecJobs()
 	// if err := sv.AddJob(fmt.Sprintf("uid %v", 2), testJobOk); err == nil {
@@ -49,7 +49,7 @@ func TestSupervisor_addExecJobs(t *testing.T) {
 }
 
 func TestSupervisor_execJobs(t *testing.T) {
-	sv := NewSuperVisor(3)
+	sv := NewWP(3)
 	for i := 0; i < 5; i++ {
 		sv.AddJob(fmt.Sprintf("uid %v", i*2), testJobOk)
 		sv.AddJob(fmt.Sprintf("uid %v", i*2+1), testJobFailed)

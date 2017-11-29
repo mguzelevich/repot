@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,14 +31,16 @@ func WalkFs(fs afero.Fs, rootPath string) ([]*git.Repository, error) {
 				log.WithFields(log.Fields{"repository": r}).Error("walk: get git config")
 			} else {
 				r.Repository = config["remote.origin.url"]
-				p := r.Path
-				if strings.HasPrefix(p, rootPath) {
-					idx := strings.LastIndex(p, "/")
-					r.Path = p[len(rootPath):idx]
-					r.Name = p[idx+1:]
-				}
-
 			}
+
+			if rootPath != "." && strings.HasPrefix(r.Path, rootPath) {
+				p := r.Path
+				idx := strings.LastIndex(p, "/")
+				r.Path = p[len(rootPath):idx]
+				r.Name = p[idx+1:]
+			}
+
+			fmt.Printf("%v\n", r)
 			targets = append(targets, r)
 			return filepath.SkipDir
 		}

@@ -1,9 +1,7 @@
-package supervisor
+package workerpool
 
 import (
 	"fmt"
-	"os"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -23,9 +21,7 @@ func (w *worker) loop(input <-chan *job, jobDone chan<- string, workerDone chan 
 	workerDone <- w.uid
 }
 
-type superVisor struct {
-	ShowProgress bool
-
+type WorkerPool struct {
 	workersPool []worker
 
 	jobs  []string
@@ -41,51 +37,49 @@ type superVisor struct {
 	allDoneChan    chan bool
 }
 
-func (s *superVisor) JobState(uid string) jobState {
-	return s.queue[uid].state
+func (wp *WorkerPool) JobState(uid string) jobState {
+	return wp.queue[uid].state
 }
 
-func (s *superVisor) status() string {
+func (wp *WorkerPool) JobsStatus() []jobState {
+	status := []jobState{}
+	for _, j := range wp.jobs {
+		job := wp.queue[j]
+		status = append(status, job.state)
+	}
+	return status
+}
+
+func (wp *WorkerPool) JobsStatusString() string {
+	statuses := map[jobState]string{
+		jobStatePending:   " ",
+		jobStateExecuting: ".",
+		jobStateFailed:    "E",
+		jobStateFinished:  "+",
+	}
+
 	status := ""
-	for _, j := range s.jobs {
-		jobStatus := "."
-		switch job := s.queue[j]; job.state {
-		case jobStatePending:
-			jobStatus = "."
-		case jobStateExecuting:
-			jobStatus = "*"
-		case jobStateFailed:
-			jobStatus = "E"
-		case jobStateFinished:
-			jobStatus = "+"
-		default:
-			jobStatus = "!"
+	for _, state := range wp.JobsStatus() {
+		jobStatus, ok := statuses[state]
+		if !ok {
+			status += "!"
 		}
 		status += jobStatus
 	}
 	return status
 }
 
-func (s *superVisor) logStatus() {
-	if !s.ShowProgress {
-		return
-	}
-	status := s.status()
-	fmt.Fprintf(os.Stderr, "JQ: %s\n", status)
-	// log.WithFields(log.Fields{"status": status}).Info("JQ")
-}
-
-func (s *superVisor) addLoop() {
+func (wp *WorkerPool) addLoop() {
 	log.Debug("add loop started")
 	func() {
 		for {
 			select {
-			case job, ok := <-s.addJobChan:
+			case job, ok := <-wp.addJobChan:
 				if !ok {
 					return
 				}
-				s.jobs = append(s.jobs, job.uid)
-				s.queue[job.uid] = job
+				wp.jobs = append(wp.jobs, job.uid)
+				wp.queue[job.uid] = job
 				log.WithFields(log.Fields{"uid": job.uid}).Debug("job added")
 			default:
 				continue
@@ -93,74 +87,59 @@ func (s *superVisor) addLoop() {
 		}
 	}()
 	log.Debug("all jobs added")
-	s.addDoneChan <- true
+	wp.addDoneChan <- true
 }
 
-func (s *superVisor) statusLoop() {
-	log.Debug("status loop started")
-	heartbeat := time.Tick(2 * time.Second)
-	for {
-		select {
-		case <-heartbeat:
-			s.logStatus()
-		}
-	}
-}
-
-func (s *superVisor) AddJob(uid string, handler JobHandler) error {
+func (wp *WorkerPool) AddJob(uid string, handler JobHandler) error {
 	j := &job{
 		uid:     uid,
 		state:   jobStatePending,
 		handler: handler,
 	}
-	s.addJobChan <- j
+	wp.addJobChan <- j
 	return nil
 }
 
-func (s *superVisor) checkDone() error {
+func (wp *WorkerPool) checkDone() error {
 	for {
 		select {
-		case uid := <-s.workerDoneChan:
+		case uid := <-wp.workerDoneChan:
 			log.WithFields(log.Fields{"worker": uid}).Debug("worker loop finished")
 			allDone := true
-			for _, j := range s.queue {
+			for _, j := range wp.queue {
 				allDone = allDone && j.executed()
 			}
 			if allDone {
-				s.allDoneChan <- true
+				wp.allDoneChan <- true
 				return nil
 			}
-		case uid := <-s.jobDoneChan:
+		case uid := <-wp.jobDoneChan:
 			log.WithFields(log.Fields{"job": uid}).Debug("job done msg received")
-			//s.queue[uid].executed = true
+			//wp.queue[uid].executed = true
 		default:
 			continue
 		}
 	}
 }
 
-func (s *superVisor) ExecJobs() error {
-	close(s.addJobChan)
-	<-s.addDoneChan
-	s.logStatus()
+func (wp *WorkerPool) ExecJobs() error {
+	close(wp.addJobChan)
+	<-wp.addDoneChan
 
-	go s.checkDone()
+	go wp.checkDone()
 
-	for _, j := range s.queue {
-		s.jobExecChan <- j
+	for _, j := range wp.queue {
+		wp.jobExecChan <- j
 	}
 	log.Debug("all jobs sended")
-	close(s.jobExecChan)
-	s.logStatus()
+	close(wp.jobExecChan)
 
-	<-s.allDoneChan
-
-	s.logStatus()
+	<-wp.allDoneChan
 	return nil
 }
 
-func NewSuperVisor(poolSize int) *superVisor {
-	sv := superVisor{
+func NewWP(poolSize int) *WorkerPool {
+	sv := WorkerPool{
 		queue: make(map[string]*job),
 
 		addJobChan:  make(chan *job),
@@ -181,8 +160,7 @@ func NewSuperVisor(poolSize int) *superVisor {
 	}
 
 	go sv.addLoop()
-	go sv.statusLoop()
 
-	log.Debug("supervisor init done")
+	log.Debug("WorkerPool init done")
 	return &sv
 }

@@ -1,4 +1,4 @@
-package supervisor
+package workerpool
 
 import (
 //	log "github.com/sirupsen/logrus"

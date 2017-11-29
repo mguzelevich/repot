@@ -12,7 +12,7 @@ import (
 	"github.com/mguzelevich/repot"
 	"github.com/mguzelevich/repot/fs"
 	"github.com/mguzelevich/repot/git"
-	"github.com/mguzelevich/repot/supervisor"
+	"github.com/mguzelevich/repot/workerpool"
 )
 
 // reposCmd represents the repos command
@@ -47,10 +47,13 @@ var cloneCmd = &cobra.Command{
 			manifestRepos = manifest.Repositories
 		}
 
-		results := supervisor.NewSimpleJobsOutputs()
+		results := workerpool.NewSimpleJobsOutputs()
+		wp := workerpool.NewWP(cmdArgs.Jobs)
 
-		supervisor := supervisor.NewSuperVisor(cmdArgs.Jobs)
-		supervisor.ShowProgress = cmdArgs.Progress
+		if cmdArgs.Progress {
+			go progressLoop(wp)
+		}
+
 		for idx, r := range manifestRepos {
 			log.WithFields(log.Fields{"idx": idx, "repository": r}).Debug("get from manifest")
 
@@ -64,12 +67,12 @@ var cloneCmd = &cobra.Command{
 				return err
 			}
 			uid := r.HashID()
-			supervisor.AddJob(uid, cloneFunc)
+			wp.AddJob(uid, cloneFunc)
 		}
-		supervisor.ExecJobs()
+		wp.ExecJobs()
 
 		for idx, r := range manifestRepos {
-			state := supervisor.JobState(r.HashID())
+			state := wp.JobState(r.HashID())
 			fmt.Fprintf(os.Stderr, "=== %03d === [%s] %s\n", idx+1, r.Repository, state)
 		}
 	},
