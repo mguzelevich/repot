@@ -1,4 +1,4 @@
-package repot
+package supervisor
 
 import (
 //	log "github.com/sirupsen/logrus"

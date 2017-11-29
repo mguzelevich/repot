@@ -9,7 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/mguzelevich/repot"
 	"github.com/mguzelevich/repot/fs"
 	"github.com/mguzelevich/repot/git"
 	"github.com/mguzelevich/repot/supervisor"
@@ -36,7 +35,7 @@ var gitCmd = &cobra.Command{
 			fsRepos = repositories
 		}
 
-		results := newOutputs()
+		results := supervisor.NewSimpleJobsOutputs()
 
 		supervisor := supervisor.NewSuperVisor(cmdArgs.Jobs)
 		supervisor.ShowProgress = cmdArgs.Progress
@@ -54,7 +53,6 @@ var gitCmd = &cobra.Command{
 			supervisor.AddJob(uid, gitFunc)
 		}
 		supervisor.ExecJobs()
-		results.WaitDone()
 
 		for idx, r := range fsRepos {
 			status := supervisor.JobState(r.HashID())

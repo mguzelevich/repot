@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"sync"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -32,25 +31,6 @@ type Args struct {
 var (
 	cmdArgs Args
 )
-
-type cmdOutput struct {
-	sync.Mutex
-	res map[string][]string
-}
-
-func (c *cmdOutput) Add(uid string, result []string) {
-	c.Lock()
-	c.res[uid] = result
-	c.Unlock()
-}
-
-func (c *cmdOutput) Get(uid string) []string {
-	return c.res[uid]
-}
-
-func newOutputs() *cmdOutput {
-	return &cmdOutput{res: make(map[string][]string)}
-}
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{

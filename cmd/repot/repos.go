@@ -12,6 +12,7 @@ import (
 	"github.com/mguzelevich/repot"
 	"github.com/mguzelevich/repot/fs"
 	"github.com/mguzelevich/repot/git"
+	"github.com/mguzelevich/repot/supervisor"
 )
 
 // reposCmd represents the repos command
@@ -46,9 +47,9 @@ var cloneCmd = &cobra.Command{
 			manifestRepos = manifest.Repositories
 		}
 
-		results := newOutputs()
+		results := supervisor.NewSimpleJobsOutputs()
 
-		supervisor := repot.NewSuperVisor(cmdArgs.Jobs)
+		supervisor := supervisor.NewSuperVisor(cmdArgs.Jobs)
 		supervisor.ShowProgress = cmdArgs.Progress
 		for idx, r := range manifestRepos {
 			log.WithFields(log.Fields{"idx": idx, "repository": r}).Debug("get from manifest")

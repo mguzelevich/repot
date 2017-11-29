@@ -1,4 +1,4 @@
-package repot
+package supervisor
 
 import (
 	"errors"
