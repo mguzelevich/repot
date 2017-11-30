@@ -6,19 +6,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type worker struct {
+type poolStateSignal struct {
 	uid string
-}
-
-func (w *worker) loop(input <-chan *job, jobDone chan<- string, workerDone chan string) {
-	log.WithFields(log.Fields{"worker": w.uid}).Debug("worker loop started")
-	for job := range input {
-		log.WithFields(log.Fields{"worker": w.uid, "uid": job.uid}).Debug("job started")
-		job.start()
-		log.WithFields(log.Fields{"worker": w.uid, "uid": job.uid}).Debug("job finished")
-		jobDone <- job.uid
-	}
-	workerDone <- w.uid
+	msg string
 }
 
 type WorkerPool struct {
@@ -27,11 +17,13 @@ type WorkerPool struct {
 	jobs  []string
 	queue map[string]*job
 
+	PoolStateChan chan poolStateSignal
+	JobsStateChan chan jobStateSignal
+
 	addJobChan  chan *job
 	addDoneChan chan bool
 
 	jobExecChan chan *job
-	jobDoneChan chan string
 
 	workerDoneChan chan string
 	allDoneChan    chan bool
@@ -92,9 +84,10 @@ func (wp *WorkerPool) addLoop() {
 
 func (wp *WorkerPool) AddJob(uid string, handler JobHandler) error {
 	j := &job{
-		uid:     uid,
-		state:   jobStatePending,
-		handler: handler,
+		uid:       uid,
+		state:     jobStatePending,
+		stateChan: wp.JobsStateChan,
+		handler:   handler,
 	}
 	wp.addJobChan <- j
 	return nil
@@ -103,19 +96,18 @@ func (wp *WorkerPool) AddJob(uid string, handler JobHandler) error {
 func (wp *WorkerPool) checkDone() error {
 	for {
 		select {
-		case uid := <-wp.workerDoneChan:
-			log.WithFields(log.Fields{"worker": uid}).Debug("worker loop finished")
+		//case uid := <-wp.workerDoneChan:
+		case <-wp.workerDoneChan:
 			allDone := true
 			for _, j := range wp.queue {
 				allDone = allDone && j.executed()
 			}
 			if allDone {
-				wp.allDoneChan <- true
+				close(wp.PoolStateChan)
+				close(wp.JobsStateChan)
+				close(wp.allDoneChan)
 				return nil
 			}
-		case uid := <-wp.jobDoneChan:
-			log.WithFields(log.Fields{"job": uid}).Debug("job done msg received")
-			//wp.queue[uid].executed = true
 		default:
 			continue
 		}
@@ -139,14 +131,16 @@ func (wp *WorkerPool) ExecJobs() error {
 }
 
 func NewWP(poolSize int) *WorkerPool {
-	sv := WorkerPool{
+	wp := WorkerPool{
 		queue: make(map[string]*job),
+
+		PoolStateChan: make(chan poolStateSignal),
+		JobsStateChan: make(chan jobStateSignal),
 
 		addJobChan:  make(chan *job),
 		addDoneChan: make(chan bool),
 
 		jobExecChan: make(chan *job),
-		jobDoneChan: make(chan string),
 
 		workerDoneChan: make(chan string),
 
@@ -155,12 +149,12 @@ func NewWP(poolSize int) *WorkerPool {
 
 	for i := 0; i < poolSize; i++ {
 		w := worker{uid: fmt.Sprintf("%d", i)}
-		sv.workersPool = append(sv.workersPool, w)
-		go w.loop(sv.jobExecChan, sv.jobDoneChan, sv.workerDoneChan)
+		wp.workersPool = append(wp.workersPool, w)
+		go w.loop(wp.jobExecChan, wp.workerDoneChan)
 	}
 
-	go sv.addLoop()
+	go wp.addLoop()
 
 	log.Debug("WorkerPool init done")
-	return &sv
+	return &wp
 }

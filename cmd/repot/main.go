@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/mguzelevich/repot/workerpool"
 )
@@ -146,11 +147,22 @@ func initConfig() {
 func progressLoop(wp *workerpool.WorkerPool) {
 	log.Debug("status loop started")
 	heartbeat := time.Tick(2 * time.Second)
+	fmt.Fprintf(os.Stderr, "\n")
+
+	fd := int(os.Stderr.Fd())
+	//fd = 0
+	width, height, err := terminal.GetSize(fd)
+	fmt.Fprintf(os.Stderr, "%d x %d %s\n\n", width, height, err)
+
 	for {
 		select {
+		case _, ok := <-wp.JobsStateChan:
+			if !ok {
+				return
+			}
+			fmt.Fprintf(os.Stderr, "jobs: [%s]\r", wp.JobsStatusString())
 		case <-heartbeat:
-			fmt.Fprintf(os.Stderr, "jobs: [%s]\n", wp.JobsStatusString())
-			// log.WithFields(log.Fields{"status": status}).Info("JQ")
+			fmt.Fprintf(os.Stderr, "jobs: [%s]\r", wp.JobsStatusString())
 		}
 	}
 }
