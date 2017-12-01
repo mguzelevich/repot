@@ -144,15 +144,67 @@ func initConfig() {
 	}
 }
 
+func printStatus(status string) {
+	if status == "" {
+		return
+	}
+
+	scale := float32(1.0)
+
+	if width, _, err := terminal.GetSize(int(os.Stderr.Fd())); err == nil {
+		if (width - 10) < len(status) {
+			scale = float32(len(status)) / float32(width-10)
+		}
+	}
+
+	statusOut := ""
+	m := int(scale + 0.5)
+
+	jPending := 0
+	jExecuting := 0
+	jFailed := 0
+	jFinished := 0
+
+	tmp := ""
+	for idx, st := range status {
+		if (idx+1)%m == 0 {
+			statusOut += tmp
+			tmp = ""
+		}
+
+		switch st {
+		case ' ':
+			tmp = " "
+			jPending++
+		case '.':
+			tmp = "."
+			jExecuting++
+		case 'E':
+			jFailed++
+			if tmp != " " || tmp != "." {
+				tmp = "E"
+			}
+		case '+':
+			jFinished++
+			if tmp != " " || tmp != "." {
+				tmp = "+"
+			}
+		default:
+			tmp = "!"
+		}
+	}
+	percents := int(100 * float32(jFailed+jFinished) / float32(len(status)))
+	fmt.Fprintf(os.Stderr, "jobs: [%s] %d/%d (%d %%)\r", statusOut, jFailed+jFinished, len(status), percents)
+}
+
 func progressLoop(wp *workerpool.WorkerPool) {
 	log.Debug("status loop started")
 	heartbeat := time.Tick(2 * time.Second)
 	fmt.Fprintf(os.Stderr, "\n")
 
-	fd := int(os.Stderr.Fd())
-	//fd = 0
-	width, height, err := terminal.GetSize(fd)
-	fmt.Fprintf(os.Stderr, "%d x %d %s\n\n", width, height, err)
+	if width, height, err := terminal.GetSize(int(os.Stderr.Fd())); err != nil {
+		log.WithFields(log.Fields{"width": width, "height": height, "err": err}).Debug("terminal.GetSize")
+	}
 
 	for {
 		select {
@@ -160,9 +212,9 @@ func progressLoop(wp *workerpool.WorkerPool) {
 			if !ok {
 				return
 			}
-			fmt.Fprintf(os.Stderr, "jobs: [%s]\r", wp.JobsStatusString())
+			printStatus(wp.JobsStatusString())
 		case <-heartbeat:
-			fmt.Fprintf(os.Stderr, "jobs: [%s]\r", wp.JobsStatusString())
+			printStatus(wp.JobsStatusString())
 		}
 	}
 }
