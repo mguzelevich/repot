@@ -1,8 +1,6 @@
 package git
 
 import (
-	"fmt"
-	"os/exec"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -13,71 +11,36 @@ type GitRepo struct {
 	url  string
 }
 
-func customCmdBuilder(args []string) []string {
-	result := []string{"git"}
-	switch args[0] {
-	case "status":
-		result = []string{"git", "status", "--short", "--branch"}
-	default:
-		result = append(result, args...)
-	}
-	return result
+type GitClient struct {
+	directory string
 }
 
-func customOutParser(cmd string, out []string) []string {
-	result := []string{}
-	switch cmd {
-	case "status":
-		result = out
-	default:
-		result = out
-	}
-	return result
+func (g *GitClient) Clone(repository string) error {
+	args := []string{"git", "clone", repository, g.directory}
+	out, err := ExecGitCmd(".", args)
+	log.WithFields(log.Fields{"args": args, "out": out, "err": err}).Debug("git.clone")
+	return err
 }
 
-// https://nathanleclaire.com/blog/2014/12/29/shelled-out-commands-in-golang/
-func ExecGitCmd(dir string, args []string) ([]string, error) {
-	gitLogger := log.WithFields(log.Fields{"cmd": args})
-	cmdPath, err := exec.LookPath(args[0])
+func (g *GitClient) Config() error {
+	args := []string{"git", "config", "-l"}
+
+	out, err := ExecGitCmd(g.directory, args)
+	log.WithFields(log.Fields{"args": args, "path": g.directory, "out": out, "err": err}).Debug("git config")
 	if err != nil {
-		gitLogger.WithFields(log.Fields{"err": err}).Error("LookPath")
-		return nil, fmt.Errorf("ExecGitCmd lookup error")
+		return err
 	}
 
-	cmd := exec.Cmd{
-		Dir:  dir,
-		Path: cmdPath,
-		Args: args,
+	config := map[string]string{}
+	for _, s := range out {
+		d := strings.Split(s, `=`)
+		if len(d) != 2 {
+			continue
+		}
+		config[d[0]] = d[1]
 	}
-
-	out, err := cmd.CombinedOutput()
-
-	output := []string{}
-	for _, line := range strings.Split(string(out), "\n") {
-		output = append(output, line)
-	}
-
-	l := gitLogger.WithFields(log.Fields{"err": err, "out": string(out)})
-	if err != nil {
-		l.Error("ExecGitCmd")
-		return output, fmt.Errorf("ExecGitCmd error")
-	}
-	l.Info("ExecGitCmd")
-
-	return output, nil
-}
-
-func Exec(directory string, cmd []string) ([]string, error) {
-	// args := []string{"journalctl", "-b", "-f"}
-	args := customCmdBuilder(cmd)
-
-	log.WithFields(log.Fields{"directory": directory, "cmd": args}).Debug("git")
-
-	rawOut, err := ExecGitCmd(directory, args)
-
-	out := customOutParser(args[1], rawOut)
-
-	return out, err
+	log.WithFields(log.Fields{"config": config}).Debug("git config")
+	return err
 }
 
 func Clone(repository string, directory string) ([]string, error) {
@@ -112,11 +75,4 @@ func GetGitConfig(directory string) (map[string]string, error) {
 	}
 	log.WithFields(log.Fields{"directory": directory, "config": config}).Debug("git config")
 	return config, err
-}
-
-func (g *GitRepo) Walk() error {
-	// dirs, _ := repot.Walk(g.Root)
-	// //	r.Targets = dirs
-	log.WithFields(log.Fields{"git": g}).Debug("Walk")
-	return nil
 }
