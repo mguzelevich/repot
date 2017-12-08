@@ -10,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/mguzelevich/repot/git"
+	"github.com/mguzelevich/repot/helpers"
 )
 
 type Manifest struct {
@@ -49,7 +50,7 @@ func (m *Manifest) Parse(data string) error {
 }
 
 func GetManifest(manifestFile string) (*Manifest, error) {
-	manifestData, err := ReadData(manifestFile)
+	manifestData, err := helpers.ReadData(manifestFile)
 	if err != nil {
 		return nil, fmt.Errorf("get manifest: ReadData error")
 	}
