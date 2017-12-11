@@ -1,4 +1,4 @@
-package repot
+package repot_test
 
 // https://golang.org/pkg/testing/
 

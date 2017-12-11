@@ -1,4 +1,4 @@
-package repot
+package git
 
 import (
 	// "path/filepath"
@@ -9,12 +9,11 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mguzelevich/repot/git"
 	"github.com/mguzelevich/repot/helpers"
 )
 
 type Manifest struct {
-	Repositories []*git.Repository
+	Repositories []*Repository
 }
 
 func processManifestLine(line string) error {
@@ -23,7 +22,7 @@ func processManifestLine(line string) error {
 
 func (m *Manifest) Add(repository string, path string, name string) error {
 	log.WithFields(log.Fields{"repository": repository, "path": path, "name": name}).Debug("add to manifest")
-	r := git.Repository{
+	r := Repository{
 		Repository: repository, Path: path, Name: name,
 	}
 	m.Repositories = append(m.Repositories, &r)

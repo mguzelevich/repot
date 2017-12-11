@@ -9,7 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/mguzelevich/repot"
 	"github.com/mguzelevich/repot/fs"
 	"github.com/mguzelevich/repot/git"
 	"github.com/mguzelevich/repot/workerpool"
@@ -41,7 +40,7 @@ var cloneCmd = &cobra.Command{
 		}
 
 		var manifestRepos = []*git.Repository{}
-		if manifest, err := repot.GetManifest(cmdArgs.Repos.ManifestFile); err != nil {
+		if manifest, err := git.GetManifest(cmdArgs.Repos.ManifestFile); err != nil {
 			log.WithFields(log.Fields{"err": err}).Error("getManifest")
 		} else {
 			manifestRepos = manifest.Repositories
@@ -89,7 +88,7 @@ var diffCmd = &cobra.Command{
 		var manifestRepos = []*git.Repository{}
 		var fsRepos = []*git.Repository{}
 
-		if manifest, err := repot.GetManifest(cmdArgs.Repos.ManifestFile); err != nil {
+		if manifest, err := git.GetManifest(cmdArgs.Repos.ManifestFile); err != nil {
 			log.WithFields(log.Fields{"err": err}).Error("getManifest")
 		} else {
 			manifestRepos = manifest.Repositories

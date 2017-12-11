@@ -1,4 +1,4 @@
-package fs
+package fs_test
 
 // https://golang.org/pkg/testing/
 
@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	"github.com/spf13/afero"
+
+	"github.com/mguzelevich/repot/fs"
 )
 
 func compare(a, b []int) bool {
@@ -62,7 +64,7 @@ func TestWalk(t *testing.T) {
 `), 0644)
 	afero.WriteFile(appFS, "tmp/repo/README.md", []byte("README.md"), 0644)
 
-	r, e := WalkFs(appFS, ".")
+	r, e := fs.WalkFs(appFS, ".")
 	fmt.Printf("%v %v", r, e)
 	//t.Errorf("walk", r, e)
 }

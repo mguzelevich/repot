@@ -1,4 +1,4 @@
-package repot
+package helpers_test
 
 // https://golang.org/pkg/testing/
 
@@ -6,6 +6,8 @@ import (
 	// "bytes"
 	// "fmt"
 	"testing"
+
+	"github.com/mguzelevich/repot/helpers"
 )
 
 func compare(a, b []int) bool {
@@ -36,7 +38,7 @@ func TestParseDeltaString_pos(t *testing.T) {
 		test{"1,3-7,12", []int{1, 3, 4, 5, 6, 7, 12}},
 	}
 	for i, tst := range testes {
-		if in, err := ParseRangesString(tst.in); err != nil || !compare(in, tst.out) {
+		if in, err := helpers.ParseRangesString(tst.in); err != nil || !compare(in, tst.out) {
 			t.Error(
 				"For", "TestParseDeltaString", i,
 				"expected", tst.out,
@@ -57,7 +59,7 @@ func TestParseDeltaString_neg(t *testing.T) {
 		test{"3,", []int{1}},
 	}
 	for i, tst := range testes {
-		if in, err := ParseRangesString(tst.in); err == nil {
+		if in, err := helpers.ParseRangesString(tst.in); err == nil {
 			t.Error(
 				"For", "TestParseDeltaString", i,
 				"expected", "ERROR",

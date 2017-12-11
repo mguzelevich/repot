@@ -39,8 +39,12 @@ func UnzipFile(src afero.File, dst afero.File) error {
 	return nil
 }
 
-func UntarFile(src afero.File, dst string) error {
-	tr := tar.NewReader(src)
+func UntarFile(fs afero.Fs, src string, dst string) error {
+	srcFile, err := appFs.Open(src)
+	if err != nil {
+		return err
+	}
+	tr := tar.NewReader(srcFile)
 	for {
 		header, err := tr.Next()
 

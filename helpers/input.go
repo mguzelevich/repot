@@ -6,7 +6,10 @@ import (
 	"os"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/afero"
 )
+
+var appFs = afero.NewOsFs()
 
 func readDataFromScanner(scanner *bufio.Scanner) []string {
 	result := []string{}
@@ -29,7 +32,7 @@ func ReadData(filename string) ([]string, error) {
 			log.Debug("no pipe, no file :(")
 		} else {
 			log.Debug("read data from file")
-			fd, err := os.Open(filename)
+			fd, err := appFs.Open(filename)
 			if err != nil {
 				return nil, fmt.Errorf("open file: reading error")
 			}

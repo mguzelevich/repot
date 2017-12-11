@@ -1,4 +1,4 @@
-package repot
+package helpers
 
 import (
 	"crypto/rand"

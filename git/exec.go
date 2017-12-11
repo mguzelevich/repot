@@ -55,7 +55,7 @@ func ExecGitCmd(dir string, args []string) ([]string, error) {
 	l := gitLogger.WithFields(log.Fields{"err": err, "out": string(out)})
 	if err != nil {
 		l.Error("ExecGitCmd")
-		return output, fmt.Errorf("ExecGitCmd error")
+		return output, fmt.Errorf("ExecGitCmd error %v", err)
 	}
 	l.Info("ExecGitCmd")
 
