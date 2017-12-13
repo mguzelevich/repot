@@ -181,12 +181,10 @@ func printStatus(status string) {
 			jExecuting++
 		case 'E':
 			jFailed++
-			if tmp != " " || tmp != "." {
-				tmp = "E"
-			}
+			tmp = "E"
 		case '+':
 			jFinished++
-			if tmp != " " || tmp != "." {
+			if tmp != "E" {
 				tmp = "+"
 			}
 		default:
