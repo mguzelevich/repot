@@ -27,8 +27,9 @@ type Args struct {
 	}
 
 	Repos struct {
-		ManifestFile        string
-		RepositoriesIndexes string
+		ManifestFile         string
+		RepositoriesIndexes  string
+		WipeTargetIfConflict bool
 	}
 }
 
@@ -47,14 +48,15 @@ RepoT is a CLI tools suite for automation of development activity.`,
 	//	Run: func(cmd *cobra.Command, args []string) { },
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		log.WithFields(log.Fields{
-			"root.debug":                cmdArgs.Debug,
-			"root.progress":             cmdArgs.Progress,
-			"root.jobs":                 cmdArgs.Jobs,
-			"root.root":                 cmdArgs.Root,
-			"root.dry-run":              cmdArgs.DryRun,
-			"git.RepositoriesIndexes":   cmdArgs.Git.RepositoriesIndexes,
-			"repos.ManifestFile":        cmdArgs.Repos.ManifestFile,
-			"repos.RepositoriesIndexes": cmdArgs.Repos.RepositoriesIndexes,
+			"root.debug":                 cmdArgs.Debug,
+			"root.progress":              cmdArgs.Progress,
+			"root.jobs":                  cmdArgs.Jobs,
+			"root.root":                  cmdArgs.Root,
+			"root.dry-run":               cmdArgs.DryRun,
+			"git.RepositoriesIndexes":    cmdArgs.Git.RepositoriesIndexes,
+			"repos.ManifestFile":         cmdArgs.Repos.ManifestFile,
+			"repos.RepositoriesIndexes":  cmdArgs.Repos.RepositoriesIndexes,
+			"repos.WipeTargetIfConflict": cmdArgs.Repos.WipeTargetIfConflict,
 		}).Debug("root: PersistentPreRun")
 		initLogger()
 	},
@@ -106,6 +108,7 @@ func init() {
 	RootCmd.AddCommand(reposCmd)
 	reposCmd.PersistentFlags().StringVarP(&cmdArgs.Repos.ManifestFile, "manifest", "m", "manifest.yaml", "manifest file")
 	reposCmd.PersistentFlags().StringVarP(&cmdArgs.Repos.RepositoriesIndexes, "filter", "f", "", "repositories to processing")
+	reposCmd.PersistentFlags().BoolVarP(&cmdArgs.Repos.WipeTargetIfConflict, "wipe", "", false, "wipe target dir")
 	reposCmd.AddCommand(cloneCmd)
 	reposCmd.AddCommand(diffCmd)
 }
