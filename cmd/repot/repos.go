@@ -8,6 +8,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/mguzelevich/repot/fs"
 	"github.com/mguzelevich/repot/git"
@@ -19,6 +20,9 @@ var reposCmd = &cobra.Command{
 	Use:   "repos",
 	Short: "Git repos activity automation",
 	Long:  `Git repos activity automation`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		RootCmd.PersistentPreRun(cmd, args)
+	},
 	// Run: func(cmd *cobra.Command, args []string) {
 	// 	// TODO: Work your own magic here
 	// 	fmt.Println("repos called")
@@ -30,26 +34,29 @@ var cloneCmd = &cobra.Command{
 	Use:   "clone",
 	Short: "clone multiply repositories specified by manifest",
 	Long:  `clone multiply repositories specified by manifest`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		RootCmd.PersistentPreRun(cmd, args)
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.WithFields(log.Fields{"use": cmd.Use, "args": args}).Debug("comand called")
 
-		rootPath := cmdArgs.Root
+		rootPath := viper.GetString("root")
 		if rootPath == "" {
 			// t.Format(time.RFC3339Nano)
 			rootPath = filepath.Join("/tmp/repot/clone", time.Now().Format("20060102_150405"))
 		}
 
 		var manifestRepos = []*git.Repository{}
-		if manifest, err := git.GetManifest(cmdArgs.Repos.ManifestFile); err != nil {
+		if manifest, err := git.GetManifest(viper.GetString("manifest")); err != nil {
 			log.WithFields(log.Fields{"err": err}).Error("getManifest")
 		} else {
 			manifestRepos = manifest.Repositories
 		}
 
 		results := workerpool.NewSimpleJobsOutputs()
-		wp := workerpool.NewWP(cmdArgs.Jobs)
+		wp := workerpool.NewWP(viper.GetInt("jobs"))
 
-		if cmdArgs.Progress {
+		if viper.GetBool("progress") {
 			go progressLoop(wp)
 		}
 
@@ -82,19 +89,22 @@ var diffCmd = &cobra.Command{
 	Use:   "check-diff",
 	Short: "compare target directory and repositories specified by manifest",
 	Long:  `compare target directory and repositories specified by manifest`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		RootCmd.PersistentPreRun(cmd, args)
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.WithFields(log.Fields{"use": cmd.Use, "args": args}).Debug("comand called")
 
 		var manifestRepos = []*git.Repository{}
 		var fsRepos = []*git.Repository{}
 
-		if manifest, err := git.GetManifest(cmdArgs.Repos.ManifestFile); err != nil {
+		if manifest, err := git.GetManifest(viper.GetString("manifest")); err != nil {
 			log.WithFields(log.Fields{"err": err}).Error("getManifest")
 		} else {
 			manifestRepos = manifest.Repositories
 		}
 
-		if repositories, err := fs.Walk(cmdArgs.Root); err != nil {
+		if repositories, err := fs.Walk(viper.GetString("root")); err != nil {
 			log.WithFields(log.Fields{"err": err}).Error("Walk")
 		} else {
 			fsRepos = repositories
@@ -143,6 +153,9 @@ var checkCmd = &cobra.Command{
 	Use:   "check",
 	Short: "check manifest",
 	Long:  `check manifest`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		RootCmd.PersistentPreRun(cmd, args)
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Printf("%s called %s\n", cmd.Use, args)
 	},

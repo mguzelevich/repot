@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -15,27 +16,6 @@ import (
 
 var cfgFile string
 
-type Args struct {
-	Debug    bool
-	Progress bool
-	DryRun   bool
-	Jobs     int
-	Root     string
-
-	Git struct {
-		RepositoriesIndexes string
-	}
-
-	Repos struct {
-		ManifestFile        string
-		RepositoriesIndexes string
-	}
-}
-
-var (
-	cmdArgs Args
-)
-
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "repot",
@@ -46,16 +26,6 @@ RepoT is a CLI tools suite for automation of development activity.`,
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		log.WithFields(log.Fields{
-			"root.debug":                cmdArgs.Debug,
-			"root.progress":             cmdArgs.Progress,
-			"root.jobs":                 cmdArgs.Jobs,
-			"root.root":                 cmdArgs.Root,
-			"root.dry-run":              cmdArgs.DryRun,
-			"git.RepositoriesIndexes":   cmdArgs.Git.RepositoriesIndexes,
-			"repos.ManifestFile":        cmdArgs.Repos.ManifestFile,
-			"repos.RepositoriesIndexes": cmdArgs.Repos.RepositoriesIndexes,
-		}).Debug("root: PersistentPreRun")
 		initLogger()
 	},
 	// PreRun: func(cmd *cobra.Command, args []string) {
@@ -89,25 +59,34 @@ func init() {
 	// will be global for your application.
 
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.repot.yaml)")
-	RootCmd.PersistentFlags().BoolVar(&cmdArgs.Debug, "debug", false, "Enable debug mode")
-	RootCmd.PersistentFlags().BoolVar(&cmdArgs.Progress, "progress", false, "Show progress")
-	RootCmd.PersistentFlags().BoolVar(&cmdArgs.DryRun, "dry-run", false, "Enable dry-run mode")
-	RootCmd.PersistentFlags().IntVar(&cmdArgs.Jobs, "jobs", 1, "Jobs")
-	RootCmd.PersistentFlags().StringVarP(&cmdArgs.Root, "root", "r", "", "root/target directory")
 
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	// RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	RootCmd.PersistentFlags().BoolP("debug", "", false, "Enable debug mode")
+	RootCmd.PersistentFlags().BoolP("progress", "", false, "Show progress")
+	RootCmd.PersistentFlags().BoolP("dry-run", "", false, "Enable dry-run mode")
+	RootCmd.PersistentFlags().IntP("jobs", "", 1, "Jobs")
+	RootCmd.PersistentFlags().StringP("root", "r", "", "root/target directory")
+
+	for _, f := range []string{"debug", "progress", "dry-run", "jobs", "root"} {
+		viper.BindPFlag(f, RootCmd.PersistentFlags().Lookup(f))
+	}
 
 	RootCmd.AddCommand(gitCmd)
 	gitCmd.Flags().SetInterspersed(false)
-	gitCmd.PersistentFlags().StringVarP(&cmdArgs.Git.RepositoriesIndexes, "filter", "f", "", "repositories to processing")
+	gitCmd.PersistentFlags().StringP("filter", "f", "", "repositories to processing")
+
+	for _, f := range []string{"filter"} {
+		viper.BindPFlag(f, gitCmd.PersistentFlags().Lookup(f))
+	}
 
 	RootCmd.AddCommand(reposCmd)
-	reposCmd.PersistentFlags().StringVarP(&cmdArgs.Repos.ManifestFile, "manifest", "m", "manifest.yaml", "manifest file")
-	reposCmd.PersistentFlags().StringVarP(&cmdArgs.Repos.RepositoriesIndexes, "filter", "f", "", "repositories to processing")
+	reposCmd.PersistentFlags().StringP("manifest", "m", "manifest.yaml", "manifest file")
+	reposCmd.PersistentFlags().StringP("filter", "f", "", "repositories to processing")
 	reposCmd.AddCommand(cloneCmd)
 	reposCmd.AddCommand(diffCmd)
+
+	for _, f := range []string{"manifest", "filter"} {
+		viper.BindPFlag(f, reposCmd.PersistentFlags().Lookup(f))
+	}
 }
 
 func initLogger() {
@@ -123,25 +102,36 @@ func initLogger() {
 
 	// log.SetFormatter(&log.JSONFormatter{})
 	log.SetLevel(log.ErrorLevel)
-	if cmdArgs.Debug {
+	if viper.GetBool("debug") {
 		log.SetLevel(log.DebugLevel)
 	}
 }
 
-// initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	if cfgFile != "" { // enable ability to specify config file via flag
+	if cfgFile != "" {
+		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
+	} else {
+		// Find home directory.
+		// home, err := homedir.Dir()
+		// if err != nil {
+		// 	er(err)
+		// }
+		// viper.AddConfigPath(home)
+
+		// Search config in home directory with name ".cobra" (without extension).
+		viper.AddConfigPath("$HOME")
+		viper.SetConfigName(".repot")
 	}
 
-	viper.SetConfigName(".repot") // name of config file (without extension)
-	viper.AddConfigPath("$HOME")  // adding home directory as first search path
-	viper.AutomaticEnv()          // read in environment variables that match
+	viper.AutomaticEnv()
 
-	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Fprintf(os.Stderr, "Using config file: %s\n", viper.ConfigFileUsed())
 	}
+
+	cfgJson, _ := json.Marshal(viper.AllSettings())
+	fmt.Fprintf(os.Stderr, "args: %v\n", string(cfgJson))
 }
 
 func printStatus(status string) {

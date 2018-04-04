@@ -8,6 +8,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/mguzelevich/repot/fs"
 	"github.com/mguzelevich/repot/git"
@@ -19,10 +20,13 @@ var gitCmd = &cobra.Command{
 	Use:   "git",
 	Short: "Git repos activity automation",
 	Long:  `Git repos activity automation`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		RootCmd.PersistentPreRun(cmd, args)
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.WithFields(log.Fields{"use": cmd.Use, "args": args}).Debug("comand called")
 
-		rootPath := cmdArgs.Root
+		rootPath := viper.GetString("root")
 		if rootPath == "" {
 			rootPath = "."
 		}
@@ -37,8 +41,9 @@ var gitCmd = &cobra.Command{
 
 		results := workerpool.NewSimpleJobsOutputs()
 
-		wp := workerpool.NewWP(cmdArgs.Jobs)
-		if cmdArgs.Progress {
+		wp := workerpool.NewWP(viper.GetInt("jobs"))
+
+		if viper.GetBool("progress") {
 			go progressLoop(wp)
 		}
 
