@@ -1,17 +1,22 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
-
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
 
 	"github.com/mguzelevich/repot/fs"
 	"github.com/mguzelevich/repot/git"
 	"github.com/mguzelevich/repot/workerpool"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+	gogit "gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/storage/memory"
 )
 
 // reposCmd represents the repos command
@@ -60,9 +65,50 @@ var cloneCmd = &cobra.Command{
 			repository := r.Repository
 
 			cloneFunc := func(uid string) error {
+				var out bytes.Buffer
+				writer := bufio.NewWriter(&out)
+
 				log.WithFields(log.Fields{"uid": uid, "repository": repository, "directory": directory}).Debug("clone func")
-				out, err := git.Clone(repository, directory)
-				results.Add(uid, out)
+
+				r, err := gogit.Clone(memory.NewStorage(), nil, &gogit.CloneOptions{
+					URL:      repository,
+					Progress: writer,
+				})
+				if err != nil {
+					return err
+				}
+				log.WithFields(log.Fields{"uid": uid, "repository": repository, "directory": directory, "r": r}).Debug("clone func")
+				/*
+					changelog, err := os.Open(filepath.Join(dir, "CHANGELOG"))
+					if err != nil {
+					    log.Fatal(err)
+					}
+					// Gets the HEAD history from HEAD, just like does:
+					Info("git log")
+
+					// ... retrieves the branch pointed by HEAD
+					ref, err := r.Head()
+					if err != nil {
+						return err
+					}
+
+					// ... retrieves the commit history
+					cIter, err := r.Log(&git.LogOptions{From: ref.Hash()})
+					if err != nil {
+						return err
+					}
+
+					// ... just iterates over the commits, printing it
+					err = cIter.ForEach(func(c *object.Commit) error {
+						fmt.Println(c)
+						return nil
+					})
+					if err != nil {
+						return err
+					}
+				*/
+				// out, err := git.Clone(repository, directory)
+				results.Add(uid, strings.Split(out.String(), "\n"))
 				return err
 			}
 			uid := r.HashID()
