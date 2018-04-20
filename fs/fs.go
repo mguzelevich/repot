@@ -33,7 +33,7 @@ func WalkFs(fs afero.Fs, rootPath string) ([]*git.Repository, error) {
 				r.Repository = config["remote.origin.url"]
 			}
 
-			if rootPath != "." && strings.HasPrefix(r.Path, rootPath) {
+			if rootPath != "." && strings.HasPrefix(r.Path, rootPath) && r.Path != rootPath {
 				p := r.Path
 				idx := strings.LastIndex(p, "/")
 				r.Path = p[len(rootPath):idx]
