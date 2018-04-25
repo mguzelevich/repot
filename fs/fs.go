@@ -17,6 +17,10 @@ var appFs = afero.NewOsFs()
 func WalkFs(fs afero.Fs, rootPath string) ([]*git.Repository, error) {
 	targets := []*git.Repository{}
 	walker := func(walkerPath string, f os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
 		if f.IsDir() && filepath.Base(walkerPath) == ".git" {
 			var r *git.Repository
 			if walkerPath == ".git" {
@@ -33,11 +37,16 @@ func WalkFs(fs afero.Fs, rootPath string) ([]*git.Repository, error) {
 				r.Repository = config["remote.origin.url"]
 			}
 
-			if rootPath != "." && strings.HasPrefix(r.Path, rootPath) && r.Path != rootPath {
-				p := r.Path
-				idx := strings.LastIndex(p, "/")
-				r.Path = p[len(rootPath):idx]
-				r.Name = p[idx+1:]
+			if rootPath != "." && strings.HasPrefix(r.Path, rootPath) {
+				if r.Path == rootPath {
+					r.Path = ""
+					r.Name = ""
+				} else {
+					p := r.Path
+					idx := strings.LastIndex(p, "/")
+					r.Path = p[len(rootPath):idx]
+					r.Name = p[idx+1:]
+				}
 			}
 
 			fmt.Printf("%v\n", r)

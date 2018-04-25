@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -129,6 +130,8 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Fprintf(os.Stderr, "Using config file: %s\n", viper.ConfigFileUsed())
 	}
+
+	viper.Set("root", path.Clean(viper.GetString("root")))
 
 	cfgJson, _ := json.Marshal(viper.AllSettings())
 	fmt.Fprintf(os.Stderr, "args: %v\n", string(cfgJson))
