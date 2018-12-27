@@ -7,7 +7,7 @@ Multiply repositories processing tools
 actual version installation:
 
 ```
-$ go get github.com/mguzelevich/repot/...
+$ go get github.com/mguzelevich/repot/cmd/repot
 ```
 
 ## Examples
@@ -17,11 +17,11 @@ $ repot
 ```
 
 ```
-rm ./repot; GOPATH=`pwd` go build github.com/mguzelevich/repot/cmd/... && cat manifest.csv | head -n 20 | ./repot --debug --jobs 2 repos clone
+rm -rf repot; go build github.com/mguzelevich/report/cmd/repot && cat manifest.csv | head -n 20 | ./repot --debug --jobs 2 repos clone
 
-rm ./repot; GOPATH=`pwd` go build github.com/mguzelevich/repot/cmd/... && cat manifest.csv | head -n 100 | ./repot --progress --jobs 10 repos clone > /tmp/t.log
+rm -rf repot; go build github.com/mguzelevich/report/cmd/repot && cat manifest.csv | head -n 100 | ./repot --progress --jobs 10 repos clone > /tmp/t.log
 
-rm ./repot; GOPATH=`pwd` go build github.com/mguzelevich/repot/cmd/... && cat manifest.csv | head -n 10 | ./repot --debug --jobs 10 --root /tmp/repot/clone/20171116_153319  repos check-diff
+rm -rf repot; go build github.com/mguzelevich/report/cmd/repot && cat manifest.csv | head -n 10 | ./repot --debug --jobs 10 --root /tmp/repot/clone/20171116_153319  repos check-diff
 ```
 
 ## Links
@@ -32,9 +32,5 @@ rm ./repot; GOPATH=`pwd` go build github.com/mguzelevich/repot/cmd/... && cat ma
 ## etc ...
 
 ```
-% go get -u github.com/golang/dep/cmd/dep
-
-% dep status
-% dep ensure
-% dep ensure --update
+% go mod init github.com/mguzelevich/repot
 ```
