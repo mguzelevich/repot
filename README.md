@@ -7,7 +7,7 @@ Multiply repositories processing tools
 actual version installation:
 
 ```
-$ go get github.com/mguzelevich/repot/...
+$ go get github.com/mguzelevich/repot/cmd/repot
 ```
 
 ## Usage
