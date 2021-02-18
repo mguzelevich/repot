@@ -1,0 +1,29 @@
+FROM ubuntu
+
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN apt-get update -qq
+RUN apt-get upgrade -y
+
+RUN apt-get install -yqq --no-install-recommends \
+	build-essential \
+    git \
+    automake
+
+RUN apt-get install -yqq --no-install-recommends \
+	ca-certificates \
+&& update-ca-certificates 2>/dev/null || true
+
+RUN apt-get install -yqq --no-install-recommends \
+	curl sqlite
+
+# Download Go and install it to /usr/local/go
+RUN curl -s https://dl.google.com/go/go1.15.linux-amd64.tar.gz | tar -v -C /usr/local -xz
+
+# RUN curl -s https://dl.google.com/go/go1.15.linux-amd64.tar.gz > /go1.15.linux-amd64.tar.gz
+# RUN tar -C /usr/local -xzf /go1.15.linux-amd64.tar.gz
+
+# Let's people find our Go binaries
+ENV PATH $PATH:/usr/local/go/bin
+
+# RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags "-extldflags -static" -o /out/staff-tools .

@@ -10,6 +10,13 @@ actual version installation:
 $ go get github.com/mguzelevich/repot/cmd/repot
 ```
 
+## build
+
+```
+$ make build-fast
+$ ./.build/repot
+```
+
 ## Usage
 
 ```
